@@ -1,0 +1,6 @@
+[submodule "lod_final_vkscrap"]
+	path = lod_final_vkscrap
+	url = https://github.com/cache-invalidation/lod_final_vkscrap.git
+[submodule "lod_final_mltools"]
+	path = lod_final_mltools
+	url = https://github.com/cache-invalidation/lod_final_mltools.git
