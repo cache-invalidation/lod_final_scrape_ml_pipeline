@@ -1,4 +1,6 @@
 temp_img/
+articles.json
+credentials.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
