@@ -4,8 +4,12 @@ from lod_final_mltools.image_sentiment import make_predictions
 from tqdm import tqdm
 from shutil import rmtree
 from os import mkdir
+from datetime import datetime
 import wget
 import json
+
+def print_time(t):
+    datetime.utcfromtimestamp(t).strftime("%Y/%m/%d")
 
 # TODO pull IDs for scraping data from tarantool
 IDs = [1, 280655896, 153378901]
@@ -46,10 +50,24 @@ for id in IDs:
     for i in range(len(data['mentions'])):
         data['mentions'][i]['sentiment'] = get_text_sentiment(data['mentions'][i]['text']).value
 
-    for post in data['posts']:
-        pass
+    # Publication
+    for photo in data['photos']:
+        print(0, photo['user'], 1, photo['sentiment'], print_time(photo['date']), photo['link'], photo['link'])
 
+    for post in data['posts']:
+        # Publication types:
+        # 1 - Photo
+        # 2 - Post
+        # 3 - Comments 
+        print(0, post['user'], 2, post['sentiment'], print_time(post['date']), post['link'], post['text'])
+
+    # Mention
     for mention in data['mentions']:
-        pass
+        print(0, mention['user'], mention['sentiment'], print_time(mention['date']), mention['link'], mention['text'], mention['mentioned_by'])
+
+    for article in articles['articles']:
+        user_id = -1  # TODO get user_id from Tarantool
+        print(0, user_id, article['sentiment'], print_time(datetime.now().timestamp()), article['link'], article['text'], None)
+
 
     # TODO push processed data to Tarantool
