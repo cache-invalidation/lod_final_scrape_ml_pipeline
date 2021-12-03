@@ -1,0 +1,3 @@
+tqdm==4.62.3
+wget==3.2
+tarantool==0.7.1
