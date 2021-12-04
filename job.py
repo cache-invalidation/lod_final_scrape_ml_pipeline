@@ -15,7 +15,15 @@ db = tarantool.Connection(TARANTOOL_IP, TARANTOOL_PORT)
 
 def new_id(space):
     entries = db.select(space)
-    return len(entries)
+    return len(entries) + 1
+
+
+def vk_id_to_tarantool_id(vkid):
+    results = list(db.select('vk', (vkid,), index='secondary'))
+    if len(results) == 0:
+        return None
+
+    return results[0][2]
 
 
 def print_time(t):
@@ -41,12 +49,12 @@ for article in articles['articles']:
     if len(ids) == 0:
         continue
 
-    user_id = ids[0]
+    user_id = ids[0][1]
 
     id = new_id('mention')
 
     db.insert('mention', (id, user_id, article['sentiment'], print_time(
-        datetime.now().timestamp()), article['link'], article['text'], None))
+        datetime.now().timestamp()), article['link'], article['text'], ''))
 
 try:
     rmtree("temp_img")
@@ -83,8 +91,12 @@ for id in IDs:
     # Publication
     for photo in data['photos']:
         id = new_id('publication')
-        db.insert('publication', (id, photo['user'], 1, photo['sentiment'], print_time(
-            photo['date']), photo['link'], photo['link']))
+        user_id = vk_id_to_tarantool_id(photo['user'])
+        if user_id is None:
+            continue
+
+        db.insert('publication', (id, user_id, 1, photo['sentiment'], print_time(
+            photo['date']), photo['link'], ''))
 
     for post in data['posts']:
         # Publication types:
@@ -92,13 +104,19 @@ for id in IDs:
         # 2 - Post
         # 3 - Comments
         id = new_id('publication')
-        db.insert('publication', (id, post['user'], 2, post['sentiment'], print_time(
+        user_id = vk_id_to_tarantool_id(post['user'])
+        if user_id is None:
+            continue
+
+        db.insert('publication', (id, user_id, 2, post['sentiment'], print_time(
             post['date']), post['link'], post['text']))
 
     # Mention
     for mention in data['mentions']:
         id = new_id('mention')
-        db.insert('mention', (id, mention['user'], mention['sentiment'], print_time(
-            mention['date']), mention['link'], mention['text'], mention['mentioned_by']))
+        user_id = vk_id_to_tarantool_id(mention['user'])
+        if user_id is None:
+            continue
 
-    # TODO push processed data to Tarantool
+        db.insert('mention', (id, user_id, mention['sentiment'], print_time(
+            mention['date']), mention['link'], mention['text'], mention['mentioned_by']))
