@@ -23,38 +23,38 @@ def vk_id_to_tarantool_id(vkid):
     if len(results) == 0:
         return None
 
-    return results[0][2]
+    return results[0][1]
 
 
 def print_time(t):
-    datetime.utcfromtimestamp(t).strftime("%Y/%m/%d")
+    return datetime.utcfromtimestamp(t).strftime("%Y/%m/%d")
 
 
-ARTICLES_FILE = "articles.json"
+# ARTICLES_FILE = "articles.json"
 
-articles = None
-with open(ARTICLES_FILE, 'r') as f:
-    articles = json.loads(f.read())
+# articles = None
+# with open(ARTICLES_FILE, 'r') as f:
+#     articles = json.loads(f.read())
 
-for i in range(len(articles['articles'])):
-    articles['articles'][i]['sentiment'] = get_text_sentiment(
-        articles['articles'][i]['text']).value
+# for i in range(len(articles['articles'])):
+#     articles['articles'][i]['sentiment'] = get_text_sentiment(
+#         articles['articles'][i]['text']).value
 
-for article in articles['articles']:
-    ids = list(db.select(
-        'user',
-        (article['name'], article['surname'], article['patronymic']),
-        index='secondary'))
+# for article in articles['articles']:
+#     ids = list(db.select(
+#         'user',
+#         (article['name'], article['surname'], article['patronymic']),
+#         index='secondary'))
 
-    if len(ids) == 0:
-        continue
+#     if len(ids) == 0:
+#         continue
 
-    user_id = ids[0][1]
+#     user_id = ids[0][0]
 
-    id = new_id('mention')
+#     id = new_id('mention')
 
-    db.insert('mention', (id, user_id, article['sentiment'], print_time(
-        datetime.now().timestamp()), article['link'], article['text'], ''))
+#     db.insert('mention', (id, user_id, article['sentiment'], print_time(
+#         datetime.now().timestamp()), article['link'], article['text'], None))
 
 try:
     rmtree("temp_img")
@@ -63,8 +63,9 @@ except:
 
 mkdir("temp_img")
 
-# TODO pull IDs for scraping data from tarantool
-IDs = [1, 280655896, 153378901]
+users = db.select('vk')
+ids_map = map(lambda x: x[2], users)
+IDs = list(ids_map)
 
 for id in IDs:
     data = get_data(id)  # Collect data from VK
@@ -79,7 +80,7 @@ for id in IDs:
 
     for i in range(len(data['photos'])):
         data['photos'][i]['sentiment'] = image_predictions[i].value
-
+    
     for i in range(len(data['posts'])):
         data['posts'][i]['sentiment'] = get_text_sentiment(
             data['posts'][i]['text']).value
@@ -118,5 +119,7 @@ for id in IDs:
         if user_id is None:
             continue
 
+        other_id = vk_id_to_tarantool_id(mention['mentioned_by'])
+
         db.insert('mention', (id, user_id, mention['sentiment'], print_time(
-            mention['date']), mention['link'], mention['text'], mention['mentioned_by']))
+            mention['date']), mention['link'], mention['text'], other_id))
